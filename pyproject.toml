@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "simular-evm-examples"
+dynamic = ["version"]
+description = 'Examples'
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Dave Bryson", email = "davebryson@users.noreply.github.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = ["simular-evm>=0.2.1", "jupyter", "pytest", "matplotlib"]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+
+tests = ["tests", "*/simular-evm-examples/tests"]
