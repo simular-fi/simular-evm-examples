@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "simular-evm-examples"
 dynamic = ["version"]
-description = 'Examples'
+description = 'Simular examples'
 version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -25,9 +25,10 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["simular-evm>=0.2.1", "jupyter", "pytest", "matplotlib"]
 
-[tool.hatch.envs.default.scripts]
-test = "pytest {args:tests}"
-
-tests = ["tests", "*/simular-evm-examples/tests"]
+dependencies = [
+  "jupyter==1.0",
+  "pytest>=8.1.1",
+  "matplotlib>=3.8.2",
+  "simular-evm>=0.2.2",
+]

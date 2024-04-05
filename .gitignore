@@ -29,3 +29,5 @@ __pycache__/
 pip-log.txt
 pip-delete-this-directory.txt
 pip-selfcheck.json
+
+wheel/

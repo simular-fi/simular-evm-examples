@@ -5,8 +5,7 @@ Load state from on-chain USDC contract.
 import os
 import json
 from simular import (
-    PyEvmFork,
-    PyEvmLocal,
+    PyEvm,
     create_many_accounts,
     contract_from_inline_abi,
 )
@@ -28,23 +27,24 @@ ABI = [
 ]
 
 
-def load_and_dump():
+def fetch_state_from_fork() -> str:
     # using my secret Alchemy API key (shhhh...) to call a remote node
-    fevm = PyEvmFork(url=os.environ["ALCHEMY"])
+    evm = PyEvm.from_fork(url=os.environ["ALCHEMY"])
+    usdc = contract_from_inline_abi(evm, ABI)
+    usdc.at(USDC)
+    assert MM == usdc.masterMinter.call()
 
-    real_usdc = contract_from_inline_abi(fevm, ABI)
-    real_usdc.at(USDC)
-    mm = real_usdc.masterMinter.call()
-    assert mm == MM
+    return evm.create_snapshot()
 
-    st1 = fevm.dump_state()
 
-    evm = PyEvmLocal()
-    evm.load_state(st1)
+def load_and_dump():
+    snapshot = fetch_state_from_fork()
+    evm = PyEvm.from_snapshot(snapshot)
 
     [m1, m2, m3] = create_many_accounts(evm, 3)
 
-    # need to save these addresses for future use...
+    # Since we're randomly generating user addresses
+    # we need to save for future use...
     addresses = {"m1": m1, "m2": m2, "m3": m3}
     with open("./usdc_addresses.json", "w") as f:
         f.write(json.dumps(addresses, indent=" "))
@@ -60,12 +60,12 @@ def load_and_dump():
     assert 10000000 == usdc.minterAllowance.call(m2)
     assert 10000000 == usdc.minterAllowance.call(m3)
 
-    final_state = evm.dump_state()
+    final_state = evm.create_snapshot()
 
     with open("./usdc_cache.json", "w") as f:
         f.write(final_state)
 
-    print("done!")
+    print("... done! ...")
 
 
 if __name__ == "__main__":
