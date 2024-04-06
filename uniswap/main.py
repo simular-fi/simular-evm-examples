@@ -1,17 +1,20 @@
 import os
 import os.path
+import typing
+
+import matplotlib.pyplot as plt
 from eth_utils import is_address
 from simular import PyEvm, create_account
 
 import abis
 
-CACHE_FILE = "diaweth.json"
 FEE = 3000
-NUM_RUNS = 20
+NUM_RUNS = 500
+CACHE_FILE = "diaweth.json"
 
-DEPOSIT = int(1e24)  # 1_000_000 eth
 
 q96 = 2**96
+DEPOSIT = int(1e24)  # 1_000_000 eth
 
 
 def sqrtp_to_price(sqrtp):
@@ -65,7 +68,7 @@ def fork_and_snapshot():
     # get token info
     token0 = pool_contract.token0.call()
     token1 = pool_contract.token1.call()
-    slot0 = pool_contract.slot0.call()
+    pool_contract.slot0.call()
 
     # fund and approve weth
     weth_contract.deposit.transact(caller=abis.AGENT, value=DEPOSIT)
@@ -109,7 +112,7 @@ def fork_and_snapshot():
         f.write(snap)
 
 
-def run_transactions():
+def run_transactions() -> typing.List[float]:
     with open(CACHE_FILE) as f:
         raw = f.read()
     evm = PyEvm.from_snapshot(raw)
@@ -118,6 +121,7 @@ def run_transactions():
     router_contract = abis.uniswap_router_contract(evm)
     factory_contract = abis.uniswap_factory_contract(evm)
 
+    # get pool info
     pool_address = factory_contract.getPool.call(abis.WETH, abis.DAI, FEE)
     pool_contract = abis.uniswap_pool_contract(evm, pool_address)
 
@@ -125,6 +129,8 @@ def run_transactions():
     token0 = pool_contract.token0.call()
     token1 = pool_contract.token1.call()
 
+    # do a bunch of swaps. WETH for DAI
+    data = []
     for _i in range(NUM_RUNS):
         swapped = router_contract.exactInputSingle.transact(
             (
@@ -139,16 +145,30 @@ def run_transactions():
             ),
             caller=abis.AGENT,
         )
-        print(f"recv: {swapped/1e18}")
+        amount = swapped / 1e18
+        data.append(amount)
 
-    sqrtp = pool_contract.slot0.call()[0]
-    dai_initial_price = token1_price(sqrtp)
-    print(f"dai final: {dai_initial_price}")
+    return data
 
-    print("done")
+
+def plot_data(data):
+    plt.style.use("_mpl-gallery")
+
+    x = [i for i in range(0, NUM_RUNS)]
+    y = data
+
+    # plot
+    fig, ax = plt.subplots(figsize=(5, 5), layout="constrained")
+    ax.set_xlabel("SWAPS")
+    ax.set_ylabel("DAI")
+    fig.suptitle("DAI for 1 Ether")
+    ax.plot(x, y, linewidth=2.0)
+
+    plt.show()
 
 
 if __name__ == "__main__":
     # fork_and_snapshot()
     # fetch_price_without_saving()
-    run_transactions()
+    data = run_transactions()
+    plot_data(data)
