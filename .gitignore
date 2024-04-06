@@ -31,3 +31,5 @@ pip-delete-this-directory.txt
 pip-selfcheck.json
 
 wheel/
+
+sample.py
