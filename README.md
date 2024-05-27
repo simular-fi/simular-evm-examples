@@ -1,8 +1,7 @@
 # Simular Examples
 
-*in progress*
+Jupyter notebook and script examples of using the Simular API.  
 
-Some Jupyter notebook examples:
-- [Basics of working with Contracts](https://github.com/simular-fi/simular-evm-examples/blob/main/basics/basics.ipynb)
-- [Forking the USDC contract](https://github.com/simular-fi/simular-evm-examples/blob/main/basics/forks.ipynb) and pretending to be the master minter!
+- [Basics: working with the EVM and Contracts](https://github.com/simular-fi/simular-evm-examples/blob/main/basics/basics.ipynb)
+- [Forking and interacting with the USDC contract](https://github.com/simular-fi/simular-evm-examples/blob/main/basics/forks.ipynb)
 
