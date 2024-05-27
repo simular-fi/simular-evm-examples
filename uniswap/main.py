@@ -1,6 +1,7 @@
 import os
 import os.path
 import typing
+import argparse
 
 import matplotlib.pyplot as plt
 from eth_utils import is_address
@@ -10,41 +11,10 @@ import abis
 
 FEE = 3000
 NUM_RUNS = 500
-CACHE_FILE = "diaweth.json"
+SNAPSHOT = "uniswap_snapshot.json"
 
 
-q96 = 2**96
 DEPOSIT = int(1e24)  # 1_000_000 eth
-
-
-def sqrtp_to_price(sqrtp):
-    return (sqrtp / q96) ** 2
-
-
-def token0_price(sqrtp):
-    sp = sqrtp_to_price(sqrtp)
-    return sp
-
-
-def token1_price(sqrtp):
-    t0 = token0_price(sqrtp)
-    return 1 / t0
-
-
-def fetch_price_without_saving():
-    evm = PyEvm.from_fork(url=os.environ["ALCHEMY"])
-    factory_contract = abis.uniswap_factory_contract(evm)
-
-    # get the pool address
-    pool_address = factory_contract.getPool.call(abis.WETH, abis.DAI, FEE)
-    assert is_address(pool_address)
-    pool_contract = abis.uniswap_pool_contract(evm, pool_address)
-
-    sqrtp = pool_contract.slot0.call()[0]
-    print(f"pool address : {pool_address}")
-    print(f"sqrtp        : {sqrtp}")
-    dai_price = token1_price(sqrtp)
-    print(f"dai for 1 eth: {dai_price}")
 
 
 def fork_and_snapshot():
@@ -65,7 +35,7 @@ def fork_and_snapshot():
     assert is_address(pool_address)
     pool_contract = abis.uniswap_pool_contract(evm, pool_address)
 
-    # get token info
+    # get token info from the pool contract
     token0 = pool_contract.token0.call()
     token1 = pool_contract.token1.call()
     pool_contract.slot0.call()
@@ -108,12 +78,12 @@ def fork_and_snapshot():
     print(f"received: {swapped/1e18} DAI for 1 Ether")
     snap = evm.create_snapshot()
 
-    with open(CACHE_FILE, "w") as f:
+    with open(SNAPSHOT, "w") as f:
         f.write(snap)
 
 
-def run_transactions() -> typing.List[float]:
-    with open(CACHE_FILE) as f:
+def run_transactions(num) -> typing.List[float]:
+    with open(SNAPSHOT) as f:
         raw = f.read()
     evm = PyEvm.from_snapshot(raw)
 
@@ -125,13 +95,13 @@ def run_transactions() -> typing.List[float]:
     pool_address = factory_contract.getPool.call(abis.WETH, abis.DAI, FEE)
     pool_contract = abis.uniswap_pool_contract(evm, pool_address)
 
-    # get token info
+    # get token addresses
     token0 = pool_contract.token0.call()
     token1 = pool_contract.token1.call()
 
     # do a bunch of swaps. WETH for DAI
     data = []
-    for _i in range(NUM_RUNS):
+    for _i in range(num):
         swapped = router_contract.exactInputSingle.transact(
             (
                 token1,
@@ -145,30 +115,46 @@ def run_transactions() -> typing.List[float]:
             ),
             caller=abis.AGENT,
         )
+
         amount = swapped / 1e18
         data.append(amount)
 
     return data
 
 
-def plot_data(data):
+def plot_data(steps, data):
     plt.style.use("_mpl-gallery")
 
-    x = [i for i in range(0, NUM_RUNS)]
+    x = [i for i in range(0, steps)]
     y = data
 
     # plot
     fig, ax = plt.subplots(figsize=(5, 5), layout="constrained")
-    ax.set_xlabel("SWAPS")
-    ax.set_ylabel("DAI")
-    fig.suptitle("DAI for 1 Ether")
+    ax.set_xlabel("Number of Trades")
+    ax.set_ylabel("DAI for 1 WETH")
+    fig.suptitle("DAI/WETH")
     ax.plot(x, y, linewidth=2.0)
 
     plt.show()
 
 
 if __name__ == "__main__":
-    # fork_and_snapshot()
-    # fetch_price_without_saving()
-    data = run_transactions()
-    plot_data(data)
+    parser = argparse.ArgumentParser(prog="python main.py")
+    parser.add_argument(
+        "--snapshot",
+        action="store_true",
+        help="Re-create the snapshot",
+    )
+    parser.add_argument(
+        "--steps", type=int, default=NUM_RUNS, help="Number of steps to run"
+    )
+
+    args = parser.parse_args()
+
+    if args.snapshot:
+        print("generating snapshot...")
+        fork_and_snapshot()
+    else:
+        print(f"making {args.steps} transactions...")
+        data = run_transactions(args.steps)
+        plot_data(args.steps, data)
