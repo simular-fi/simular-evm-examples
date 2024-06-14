@@ -30,5 +30,5 @@ dependencies = [
   "jupyter==1.0",
   "pytest>=8.1.1",
   "matplotlib>=3.8.2",
-  "simular-evm>=0.2.3",
+  "simular-evm>=0.2.5",
 ]

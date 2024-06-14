@@ -61,7 +61,7 @@ def fork_and_snapshot():
     assert daia == DEPOSIT
 
     # make a single swap
-    swapped = router_contract.exactInputSingle.transact(
+    tx = router_contract.exactInputSingle.transact(
         (
             token1,
             token0,
@@ -75,7 +75,7 @@ def fork_and_snapshot():
         caller=abis.AGENT,
     )
 
-    print(f"received: {swapped/1e18} DAI for 1 Ether")
+    print(f"received: {tx.output/1e18} DAI for 1 Ether")
     snap = evm.create_snapshot()
 
     with open(SNAPSHOT, "w") as f:
@@ -102,7 +102,7 @@ def run_transactions(num) -> typing.List[float]:
     # do a bunch of swaps. WETH for DAI
     data = []
     for _i in range(num):
-        swapped = router_contract.exactInputSingle.transact(
+        tx = router_contract.exactInputSingle.transact(
             (
                 token1,
                 token0,
@@ -116,7 +116,7 @@ def run_transactions(num) -> typing.List[float]:
             caller=abis.AGENT,
         )
 
-        amount = swapped / 1e18
+        amount = tx.output / 1e18
         data.append(amount)
 
     return data
